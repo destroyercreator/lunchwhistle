@@ -29,6 +29,7 @@ void handleRoot();
 void handleConfig();
 void handleTest();
 void handleTime();
+
 void checkWhistle();
 void triggerWhistle();
 void parseTimes(const String& timesArg);
@@ -46,6 +47,8 @@ void setup() {
   blast1Duration = prefs.getInt("blast1", blast1Duration);
   blast2Duration = prefs.getInt("blast2", blast2Duration);
   blastPause = prefs.getInt("pause", blastPause);
+
+
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -55,6 +58,7 @@ void setup() {
   Serial.println(" connected");
 
   configTzTime("EST5EDT,M3.2.0/2,M11.1.0/2", "pool.ntp.org", "time.nist.gov");
+
   Serial.println("Waiting for NTP time sync");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
@@ -67,7 +71,9 @@ void setup() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
   server.on("/test", HTTP_POST, handleTest);
+
   server.on("/time", HTTP_GET, handleTime);
+
   server.begin();
   Serial.println("HTTP server started");
   Serial.print("Device IP: ");
@@ -88,7 +94,9 @@ void handleRoot() {
   page += "box-shadow:0 2px 4px rgba(0,0,0,0.1);width:300px;text-align:center;}";
   page += "form{margin-bottom:1em;}";
   page += "input,button{padding:6px;margin:6px 0;width:100%;}";
+
   page += "#clock{font-size:1.2em;margin-top:10px;}";
+
   page += "</style></head><body><div class='card'><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
@@ -104,16 +112,21 @@ void handleRoot() {
   page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
   page += "Pause ms:<br/>";
   page += "<input type='number' name='pause' value='" + String(blastPause) + "'/><br/>";
+
   page += "<input type='submit' value='Set'/></form>";
   page += "<form method='POST' action='/test'>";
   page += "<button type='submit'>Test Whistle</button>";
   page += "</form>";
+
   page += "<div id='clock'></div>";
+
   page += "<h2>Current Times</h2><ul>";
   for (int i=0;i<numTimes;i++) {
     page += "<li>" + String(whistleTimes[i].hour) + ":" + (whistleTimes[i].minute<10?"0":"") + String(whistleTimes[i].minute) + "</li>";
   }
+
   page += "</ul><script>async function u(){let r=await fetch('/time');let t=parseInt(await r.text());document.getElementById('clock').innerText=new Date(t*1000).toLocaleTimeString();}u();setInterval(u,1000);</script></div></body></html>";
+
   server.send(200, "text/html", page);
 }
 
@@ -132,12 +145,14 @@ void handleConfig() {
   if (server.hasArg("pause")) {
     blastPause = server.arg("pause").toInt();
   }
+
   parseTimes(timesArg);
 
   prefs.putString("times", timesArg);
   prefs.putInt("blast1", blast1Duration);
   prefs.putInt("blast2", blast2Duration);
   prefs.putInt("pause", blastPause);
+
   server.sendHeader("Location", "/");
   server.send(303);
 }
