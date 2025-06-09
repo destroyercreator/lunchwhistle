@@ -21,8 +21,8 @@ int blast1Duration = 500; // first blast length (ms)
 int blast2Duration = 1500; // second blast length (ms)
 int blastPause = 200; // pause between blasts (ms)
 
+int timezoneOffset = 0; // hours offset from UTC
 
-Preferences prefs;
 WebServer server(80);
 
 void handleRoot();
@@ -45,6 +45,9 @@ void setup() {
   blast1Duration = prefs.getInt("blast1", blast1Duration);
   blast2Duration = prefs.getInt("blast2", blast2Duration);
   blastPause = prefs.getInt("pause", blastPause);
+
+  timezoneOffset = prefs.getInt("tz", timezoneOffset);
+
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -53,7 +56,7 @@ void setup() {
   }
   Serial.println(" connected");
 
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  configTime(timezoneOffset * 3600, 0, "pool.ntp.org", "time.nist.gov");
   Serial.println("Waiting for NTP time sync");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
@@ -101,6 +104,10 @@ void handleRoot() {
   page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
   page += "Pause ms:<br/>";
   page += "<input type='number' name='pause' value='" + String(blastPause) + "'/><br/>";
+
+  page += "Timezone offset hours:<br/>";
+  page += "<input type='number' name='tz' value='" + String(timezoneOffset) + "'/><br/>";
+
   page += "<input type='submit' value='Set'/></form>";
   page += "<form method='POST' action='/test'>";
   page += "<button type='submit'>Test Whistle</button>";
@@ -128,18 +135,21 @@ void handleConfig() {
   if (server.hasArg("pause")) {
     blastPause = server.arg("pause").toInt();
   }
+
+  if (server.hasArg("tz")) {
+    timezoneOffset = server.arg("tz").toInt();
+    configTime(timezoneOffset * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  }
+
   parseTimes(timesArg);
 
   prefs.putString("times", timesArg);
   prefs.putInt("blast1", blast1Duration);
   prefs.putInt("blast2", blast2Duration);
   prefs.putInt("pause", blastPause);
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
 
-void handleTest() {
-  triggerWhistle();
+  prefs.putInt("tz", timezoneOffset);
+
   server.sendHeader("Location", "/");
   server.send(303);
 }
