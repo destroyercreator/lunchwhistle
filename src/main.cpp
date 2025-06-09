@@ -48,7 +48,6 @@ void setup() {
   blast2Duration = prefs.getInt("blast2", blast2Duration);
   blastPause = prefs.getInt("pause", blastPause);
 
-
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -72,7 +71,9 @@ void setup() {
   server.on("/config", HTTP_POST, handleConfig);
   server.on("/test", HTTP_POST, handleTest);
 
+
   server.on("/time", HTTP_GET, handleTime);
+
 
   server.begin();
   Serial.println("HTTP server started");
@@ -96,8 +97,8 @@ void handleRoot() {
   page += "input,button{padding:6px;margin:6px 0;width:100%;}";
 
   page += "#clock{font-size:1.2em;margin-top:10px;}";
+  page += "</style></head><body><div class='card'><h1>Sixpenny Lunch Whistle Timer</h1>";
 
-  page += "</style></head><body><div class='card'><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
   String timesStr = "";

@@ -1,4 +1,4 @@
-# Lunch Whistle
+# Sixpenny Lunch Whistle Timer
 
 This project implements an automated break timer using a WeMos D1 mini ESP32 and a relay to trigger a train whistle. A small web interface allows configuration of the whistle times.
 
