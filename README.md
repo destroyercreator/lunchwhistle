@@ -8,5 +8,5 @@ Use the Arduino IDE or PlatformIO with the ESP8266 core. Copy `src/main.cpp` int
 ## Usage
 1. Flash the code to the WeMos D1 mini.
 2. Connect the D1 mini to your WiFi network.
-3. Browse to the device's IP address. The web page lets you enter comma separated times in `HH:MM` format.
-4. At each configured time the relay will activate for one second, sounding the whistle.
+3. Browse to the device's IP address. The page allows entry of comma separated times in `HH:MM` format and lets you adjust the duration of each of the two whistle blasts.
+4. At each configured time the relay will sound two blasts using the configured lengths.
