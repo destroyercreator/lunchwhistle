@@ -3,8 +3,8 @@
 #include <WebServer.h>
 #include <time.h>
 
-const char* ssid = "your_ssid";     // replace with your WiFi SSID
-const char* password = "your_password"; // replace with your WiFi password
+const char* ssid = "Sixpenny _EXT 2.4";     // replace with your WiFi SSID
+const char* password = "88888888"; // replace with your WiFi password
 
 const int relayPin = 5; // GPIO5 (D1 label) for the relay
 const int MAX_TIMES = 8; // Max number of whistle times
@@ -56,6 +56,8 @@ void setup() {
   server.on("/test", HTTP_POST, handleTest);
   server.begin();
   Serial.println("HTTP server started");
+  Serial.print("Device IP: ");
+  Serial.println(WiFi.localIP());
 }
 
 void loop() {
