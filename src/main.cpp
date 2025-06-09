@@ -21,8 +21,8 @@ int blast1Duration = 500; // first blast length (ms)
 int blast2Duration = 1500; // second blast length (ms)
 int blastPause = 200; // pause between blasts (ms)
 
-Preferences prefs;
 
+Preferences prefs;
 WebServer server(80);
 
 void handleRoot();
@@ -134,6 +134,12 @@ void handleConfig() {
   prefs.putInt("blast1", blast1Duration);
   prefs.putInt("blast2", blast2Duration);
   prefs.putInt("pause", blastPause);
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleTest() {
+  triggerWhistle();
   server.sendHeader("Location", "/");
   server.send(303);
 }
