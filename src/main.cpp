@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <ArduinoJson.h>
 #include <time.h>
 
 const char* ssid = "your_ssid";     // replace with your WiFi SSID
@@ -17,12 +16,16 @@ struct WhistleTime {
 
 WhistleTime whistleTimes[MAX_TIMES];
 int numTimes = 0;
+int blast1Duration = 500; // first blast length (ms)
+int blast2Duration = 1500; // second blast length (ms)
+const int blastPause = 200; // pause between blasts (ms)
 
 ESP8266WebServer server(80);
 
 void handleRoot();
 void handleConfig();
 void checkWhistle();
+void triggerWhistle();
 
 void setup() {
   pinMode(relayPin, OUTPUT);
@@ -62,7 +65,11 @@ void handleRoot() {
   String page = "<html><body><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
-  page += "<input type='text' name='times'/>";
+  page += "<input type='text' name='times'/><br/>";
+  page += "First blast ms:<br/>";
+  page += "<input type='number' name='blast1' value='" + String(blast1Duration) + "'/><br/>";
+  page += "Second blast ms:<br/>";
+  page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
   page += "<input type='submit' value='Set'/></form>";
   page += "<h2>Current Times</h2><ul>";
   for (int i=0;i<numTimes;i++) {
@@ -78,6 +85,12 @@ void handleConfig() {
     return;
   }
   String timesArg = server.arg("times");
+  if (server.hasArg("blast1")) {
+    blast1Duration = server.arg("blast1").toInt();
+  }
+  if (server.hasArg("blast2")) {
+    blast2Duration = server.arg("blast2").toInt();
+  }
   numTimes = 0;
   int last = 0;
   while (last < timesArg.length() && numTimes < MAX_TIMES) {
@@ -100,6 +113,16 @@ void handleConfig() {
   server.send(303);
 }
 
+void triggerWhistle() {
+  digitalWrite(relayPin, HIGH);
+  delay(blast1Duration);
+  digitalWrite(relayPin, LOW);
+  delay(blastPause);
+  digitalWrite(relayPin, HIGH);
+  delay(blast2Duration);
+  digitalWrite(relayPin, LOW);
+}
+
 void checkWhistle() {
   static time_t lastCheck = 0;
   time_t now = time(nullptr);
@@ -113,9 +136,7 @@ void checkWhistle() {
 
   for (int i=0; i<numTimes; i++) {
     if (whistleTimes[i].hour == currentHour && whistleTimes[i].minute == currentMinute && currentSecond == 0) {
-      digitalWrite(relayPin, HIGH); // activate relay
-      delay(1000); // 1 second whistle
-      digitalWrite(relayPin, LOW);
+      triggerWhistle();
     }
   }
 }
