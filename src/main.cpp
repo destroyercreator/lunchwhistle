@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
 #include <time.h>
 
 const char* ssid = "your_ssid";     // replace with your WiFi SSID
@@ -20,7 +20,7 @@ int blast1Duration = 500; // first blast length (ms)
 int blast2Duration = 1500; // second blast length (ms)
 const int blastPause = 200; // pause between blasts (ms)
 
-ESP8266WebServer server(80);
+WebServer server(80);
 
 void handleRoot();
 void handleConfig();
