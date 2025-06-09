@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
 #include <time.h>
 
 const char* ssid = "your_ssid";     // replace with your WiFi SSID
 const char* password = "your_password"; // replace with your WiFi password
 
-const int relayPin = D1; // Relay control pin
+const int relayPin = 5; // GPIO5 (D1 label) for the relay
 const int MAX_TIMES = 8; // Max number of whistle times
 
 struct WhistleTime {
@@ -20,10 +20,11 @@ int blast1Duration = 500; // first blast length (ms)
 int blast2Duration = 1500; // second blast length (ms)
 const int blastPause = 200; // pause between blasts (ms)
 
-ESP8266WebServer server(80);
+WebServer server(80);
 
 void handleRoot();
 void handleConfig();
+void handleTest();
 void checkWhistle();
 void triggerWhistle();
 
@@ -52,6 +53,7 @@ void setup() {
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
+  server.on("/test", HTTP_POST, handleTest);
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -62,7 +64,11 @@ void loop() {
 }
 
 void handleRoot() {
-  String page = "<html><body><h1>Lunch Whistle Timer</h1>";
+  String page = "<html><head><style>";
+  page += "body{font-family:sans-serif;margin:20px;}";
+  page += "form{margin-bottom:1em;}";
+  page += "input,button{padding:4px;margin:4px 0;}";
+  page += "</style></head><body><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
   page += "<input type='text' name='times'/><br/>";
@@ -71,6 +77,9 @@ void handleRoot() {
   page += "Second blast ms:<br/>";
   page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
   page += "<input type='submit' value='Set'/></form>";
+  page += "<form method='POST' action='/test'>";
+  page += "<button type='submit'>Test Whistle</button>";
+  page += "</form>";
   page += "<h2>Current Times</h2><ul>";
   for (int i=0;i<numTimes;i++) {
     page += "<li>" + String(whistleTimes[i].hour) + ":" + (whistleTimes[i].minute<10?"0":"") + String(whistleTimes[i].minute) + "</li>";
@@ -109,6 +118,12 @@ void handleConfig() {
     }
     last = comma + 1;
   }
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleTest() {
+  triggerWhistle();
   server.sendHeader("Location", "/");
   server.send(303);
 }
