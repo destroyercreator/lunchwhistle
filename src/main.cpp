@@ -6,7 +6,7 @@
 const char* ssid = "your_ssid";     // replace with your WiFi SSID
 const char* password = "your_password"; // replace with your WiFi password
 
-const int relayPin = D1; // Relay control pin
+const int relayPin = 5; // GPIO5 (D1 label) for the relay
 const int MAX_TIMES = 8; // Max number of whistle times
 
 struct WhistleTime {
