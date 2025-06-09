@@ -4,7 +4,7 @@ This project implements an automated break timer using a WeMos D1 mini ESP32 and
 
 ## Building
 
-Use the Arduino IDE or PlatformIO with the ESP32 core. Copy `src/main.cpp` into your sketch and provide your WiFi credentials. Connect the relay to GPIO5 (labeled `D1` on the board).
+3. Browse to the device's IP address. The page allows entry of comma separated times in `HH:MM` format and lets you adjust the duration of each of the two whistle blasts. It also provides a **Test Whistle** button for manual testing without altering the schedule.
 =======
 Use the Arduino IDE or PlatformIO with the ESP32 core. Copy `src/main.cpp` into your sketch and provide your WiFi credentials.
 
