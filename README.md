@@ -3,7 +3,11 @@
 This project implements an automated break timer using a WeMos D1 mini ESP32 and a relay to trigger a train whistle. A small web interface allows configuration of the whistle times.
 
 ## Building
+
 Use the Arduino IDE or PlatformIO with the ESP32 core. Copy `src/main.cpp` into your sketch and provide your WiFi credentials. Connect the relay to GPIO5 (labeled `D1` on the board).
+=======
+Use the Arduino IDE or PlatformIO with the ESP32 core. Copy `src/main.cpp` into your sketch and provide your WiFi credentials.
+
 
 ## Usage
 1. Flash the code to the WeMos D1 mini.
