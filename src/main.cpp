@@ -24,6 +24,7 @@ WebServer server(80);
 
 void handleRoot();
 void handleConfig();
+void handleTest();
 void checkWhistle();
 void triggerWhistle();
 
@@ -52,6 +53,7 @@ void setup() {
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
+  server.on("/test", HTTP_POST, handleTest);
   server.begin();
   Serial.println("HTTP server started");
 }
@@ -62,7 +64,11 @@ void loop() {
 }
 
 void handleRoot() {
-  String page = "<html><body><h1>Lunch Whistle Timer</h1>";
+  String page = "<html><head><style>";
+  page += "body{font-family:sans-serif;margin:20px;}";
+  page += "form{margin-bottom:1em;}";
+  page += "input,button{padding:4px;margin:4px 0;}";
+  page += "</style></head><body><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
   page += "<input type='text' name='times'/><br/>";
@@ -71,6 +77,9 @@ void handleRoot() {
   page += "Second blast ms:<br/>";
   page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
   page += "<input type='submit' value='Set'/></form>";
+  page += "<form method='POST' action='/test'>";
+  page += "<button type='submit'>Test Whistle</button>";
+  page += "</form>";
   page += "<h2>Current Times</h2><ul>";
   for (int i=0;i<numTimes;i++) {
     page += "<li>" + String(whistleTimes[i].hour) + ":" + (whistleTimes[i].minute<10?"0":"") + String(whistleTimes[i].minute) + "</li>";
@@ -109,6 +118,12 @@ void handleConfig() {
     }
     last = comma + 1;
   }
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleTest() {
+  triggerWhistle();
   server.sendHeader("Location", "/");
   server.send(303);
 }
