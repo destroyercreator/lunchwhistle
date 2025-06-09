@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <time.h>
+#include <Preferences.h>
 
 const char* ssid = "Sixpenny _EXT 2.4";     // replace with your WiFi SSID
 const char* password = "88888888"; // replace with your WiFi password
@@ -18,8 +19,10 @@ WhistleTime whistleTimes[MAX_TIMES];
 int numTimes = 0;
 int blast1Duration = 500; // first blast length (ms)
 int blast2Duration = 1500; // second blast length (ms)
-const int blastPause = 200; // pause between blasts (ms)
+int blastPause = 200; // pause between blasts (ms)
 
+
+Preferences prefs;
 WebServer server(80);
 
 void handleRoot();
@@ -27,12 +30,21 @@ void handleConfig();
 void handleTest();
 void checkWhistle();
 void triggerWhistle();
+void parseTimes(const String& timesArg);
 
 void setup() {
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, LOW);
 
   Serial.begin(115200);
+  prefs.begin("whistle", false);
+  String stored = prefs.getString("times", "");
+  if (stored.length() > 0) {
+    parseTimes(stored);
+  }
+  blast1Duration = prefs.getInt("blast1", blast1Duration);
+  blast2Duration = prefs.getInt("blast2", blast2Duration);
+  blastPause = prefs.getInt("pause", blastPause);
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -67,17 +79,28 @@ void loop() {
 
 void handleRoot() {
   String page = "<html><head><style>";
-  page += "body{font-family:sans-serif;margin:20px;}";
+  page += "body{font-family:sans-serif;background:#f7f7f7;";
+  page += "display:flex;justify-content:center;align-items:center;";
+  page += "height:100vh;margin:0;}";
+  page += ".card{background:white;padding:20px;border-radius:8px;";
+  page += "box-shadow:0 2px 4px rgba(0,0,0,0.1);width:300px;text-align:center;}";
   page += "form{margin-bottom:1em;}";
-  page += "input,button{padding:4px;margin:4px 0;}";
-  page += "</style></head><body><h1>Lunch Whistle Timer</h1>";
+  page += "input,button{padding:6px;margin:6px 0;width:100%;}";
+  page += "</style></head><body><div class='card'><h1>Lunch Whistle Timer</h1>";
   page += "<form method='POST' action='/config'>";
   page += "Times (HH:MM, comma separated):<br/>";
-  page += "<input type='text' name='times'/><br/>";
+  String timesStr = "";
+  for (int i=0;i<numTimes;i++) {
+    if (i) timesStr += ",";
+    timesStr += String(whistleTimes[i].hour) + ":" + (whistleTimes[i].minute<10?"0":"") + String(whistleTimes[i].minute);
+  }
+  page += "<input type='text' name='times' value='" + timesStr + "'/><br/>";
   page += "First blast ms:<br/>";
   page += "<input type='number' name='blast1' value='" + String(blast1Duration) + "'/><br/>";
   page += "Second blast ms:<br/>";
   page += "<input type='number' name='blast2' value='" + String(blast2Duration) + "'/><br/>";
+  page += "Pause ms:<br/>";
+  page += "<input type='number' name='pause' value='" + String(blastPause) + "'/><br/>";
   page += "<input type='submit' value='Set'/></form>";
   page += "<form method='POST' action='/test'>";
   page += "<button type='submit'>Test Whistle</button>";
@@ -86,7 +109,7 @@ void handleRoot() {
   for (int i=0;i<numTimes;i++) {
     page += "<li>" + String(whistleTimes[i].hour) + ":" + (whistleTimes[i].minute<10?"0":"") + String(whistleTimes[i].minute) + "</li>";
   }
-  page += "</ul></body></html>";
+  page += "</ul></div></body></html>";
   server.send(200, "text/html", page);
 }
 
@@ -102,24 +125,21 @@ void handleConfig() {
   if (server.hasArg("blast2")) {
     blast2Duration = server.arg("blast2").toInt();
   }
-  numTimes = 0;
-  int last = 0;
-  while (last < timesArg.length() && numTimes < MAX_TIMES) {
-    int comma = timesArg.indexOf(',', last);
-    if (comma == -1) comma = timesArg.length();
-    String pair = timesArg.substring(last, comma);
-    int colon = pair.indexOf(':');
-    if (colon > 0) {
-      int h = pair.substring(0, colon).toInt();
-      int m = pair.substring(colon + 1).toInt();
-      if (h >= 0 && h < 24 && m >= 0 && m < 60) {
-        whistleTimes[numTimes].hour = h;
-        whistleTimes[numTimes].minute = m;
-        numTimes++;
-      }
-    }
-    last = comma + 1;
+  if (server.hasArg("pause")) {
+    blastPause = server.arg("pause").toInt();
   }
+  parseTimes(timesArg);
+
+  prefs.putString("times", timesArg);
+  prefs.putInt("blast1", blast1Duration);
+  prefs.putInt("blast2", blast2Duration);
+  prefs.putInt("pause", blastPause);
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void handleTest() {
+  triggerWhistle();
   server.sendHeader("Location", "/");
   server.send(303);
 }
@@ -155,6 +175,27 @@ void checkWhistle() {
     if (whistleTimes[i].hour == currentHour && whistleTimes[i].minute == currentMinute && currentSecond == 0) {
       triggerWhistle();
     }
+  }
+}
+
+void parseTimes(const String& timesArg) {
+  numTimes = 0;
+  int last = 0;
+  while (last < timesArg.length() && numTimes < MAX_TIMES) {
+    int comma = timesArg.indexOf(',', last);
+    if (comma == -1) comma = timesArg.length();
+    String pair = timesArg.substring(last, comma);
+    int colon = pair.indexOf(':');
+    if (colon > 0) {
+      int h = pair.substring(0, colon).toInt();
+      int m = pair.substring(colon + 1).toInt();
+      if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+        whistleTimes[numTimes].hour = h;
+        whistleTimes[numTimes].minute = m;
+        numTimes++;
+      }
+    }
+    last = comma + 1;
   }
 }
 
